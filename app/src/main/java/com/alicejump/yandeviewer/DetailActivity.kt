@@ -4,6 +4,7 @@ import com.alicejump.yandeviewer.utils.getArtistDisplayName
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.Canvas
 import android.os.Bundle
 import android.util.Patterns
@@ -75,6 +76,7 @@ class DetailActivity : AppCompatActivity() {
     private var ratingSState: Boolean = false
     private var ratingQState: Boolean = false
     private var ratingEState: Boolean = false
+    private var gridSpanCount: Int = 2
 
     // ====== 共享元素动画辅助函数 ======
 
@@ -195,7 +197,8 @@ class DetailActivity : AppCompatActivity() {
                 }
 
                 val isAbove = currentPosition < firstVisiblePosition
-                val isLeft = currentPosition % 2 == 0
+                val currentColumn = currentPosition % gridSpanCount
+                val isLeft = currentColumn < (gridSpanCount / 2)
 
                 if (isAbove) {
                     // —— 上方：缩向左上 / 右上（基于 View 自身）——
@@ -276,6 +279,7 @@ class DetailActivity : AppCompatActivity() {
         val position = intent.getIntExtra("position", 0)
         firstVisiblePosition = intent.getIntExtra("first_visible_position", -1)
         lastVisiblePosition = intent.getIntExtra("last_visible_position", -1)
+        gridSpanCount = intent.getIntExtra("grid_span_count", 2).coerceAtLeast(1)
         val transitionName = intent.getStringExtra("transition_name")
 
         // 获取复选框状态
@@ -292,6 +296,11 @@ class DetailActivity : AppCompatActivity() {
         // ====== 初始化 ViewPager ======
         imagePagerAdapter = ImagePagerAdapter(posts)
         viewPager.adapter = imagePagerAdapter
+        viewPager.orientation = if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            ViewPager2.ORIENTATION_VERTICAL
+        } else {
+            ViewPager2.ORIENTATION_HORIZONTAL
+        }
         viewPager.transitionName = transitionName
 
         // ====== 收藏按钮逻辑 ======

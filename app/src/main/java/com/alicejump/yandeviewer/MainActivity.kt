@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.res.ColorStateList
+import android.content.res.Configuration
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
@@ -294,6 +295,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     putExtra("position", position)
                     putExtra("first_visible_position", firstVisible)
                     putExtra("last_visible_position", lastVisible)
+                    putExtra("grid_span_count", getPostGridSpanCount())
                     putExtra(EXTRA_RATING_S, ratingSCheckbox.isChecked)
                     putExtra(EXTRA_RATING_Q, ratingQCheckbox.isChecked)
                     putExtra(EXTRA_RATING_E, ratingECheckbox.isChecked)
@@ -314,7 +316,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         )
 
         recyclerView.layoutManager =
-            StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL)
+            StaggeredGridLayoutManager(getPostGridSpanCount(), StaggeredGridLayoutManager.VERTICAL)
         recyclerView.adapter = postAdapter
 
         recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
@@ -333,6 +335,14 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 }
             }
         })
+    }
+
+    private fun getPostGridSpanCount(): Int {
+        return if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            3
+        } else {
+            2
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
