@@ -28,12 +28,12 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      # 3. 解码 keystore（始终执行，因为你就是要签名）
+      # 3. keystore
       - name: Decode and place keystore
         run: |
           echo "${{ secrets.SIGNING_KEY_STORE_BASE64 }}" | base64 --decode > $HOME/keystore.jks
 
-      # 4. 版本号（tag / 手动）
+      # 4. version
       - name: Update Version Name in gradle.properties
         run: |
           if [[ "${{ github.ref_type }}" == "tag" ]]; then
@@ -46,11 +46,11 @@ jobs:
           echo "Updating appVersionName to $VERSION_NAME"
           sed -i "s/^appVersionName\s*=.*/appVersionName=$VERSION_NAME/" gradle.properties
 
-      # 5. 权限
+      # 5. gradlew
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # 6. 构建 Release（始终签名）
+      # 6. build
       - name: Build and sign Release APK
         run: |
           export SIGNING_KEY_STORE_PATH="$HOME/keystore.jks"
@@ -59,7 +59,14 @@ jobs:
           export SIGNING_KEY_PASSWORD="${{ secrets.SIGNING_KEY_PASSWORD }}"
           ./gradlew assembleRelease
 
-      # 7. 生成 release notes（仅 tag）
+      # 7. upload artifact（手动 + tag 都能下载）
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-apk
+          path: app/build/outputs/apk/release/app-release.apk
+
+      # 8. release notes（仅 tag）
       - name: Generate release notes
         if: github.ref_type == 'tag'
         id: generate_release_notes
@@ -67,4 +74,14 @@ jobs:
           CHANGELOG=$(git log -1 --pretty=format:"* %s (%h)" ${{ github.ref_name }})
           echo "changelog<<EOF" >> $GITHUB_OUTPUT
           echo "$CHANGELOG" >> $GITHUB_OUTPUT
-          echo "EOF" >> $G
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      # 9. GitHub Release（仅 tag）
+      - name: Create Release and Upload APK
+        if: github.ref_type == 'tag'
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "app/build/outputs/apk/release/app-release.apk"
+          tag: ${{ github.ref_name }}
+          body: ${{ steps.generate_release_notes.outputs.changelog }}
+          token: ${{ secrets.GITHUB_TOKEN }}
